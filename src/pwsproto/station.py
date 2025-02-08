@@ -222,7 +222,7 @@ class WeatherStation:
     def update_measurement(self, m: dict[str, Measurement]):
         self.latest_measurement = m
 
-    def get_ha_payloads(self) -> list[dict[str, Any]]:
+    def get_ha_payloads(self) -> dict[str, dict[str, Any]]:
         if self.latest_measurement is None:
             raise ValueError("No measurement")
         assert self.latest_measurement is not None
@@ -234,7 +234,7 @@ class WeatherStation:
             "date"
         ].value
 
-        payloads = []
+        payloads = {}
 
         for name, measurement in self.latest_measurement.items():
             # Do not generate a payload for the date
@@ -251,6 +251,7 @@ class WeatherStation:
                 latest_measurement_date.strftime("%Y-%m-%dT%H:%M:%S%z")
             )
             payload = {"state": str(measurement.value), "attributes": attributes}
-            payloads += [payload]
+
+            payloads[name] = payload
 
         return payloads

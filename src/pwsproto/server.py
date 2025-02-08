@@ -30,35 +30,28 @@ class RequestProcessor:
 
         for station in stations_auth:
             params_filtered = {
-                key: value for key, value in params if key not in ["ID", "PASSWORD"]
+                key: value
+                for key, value in params.items()
+                if key not in ["ID", "PASSWORD"]
             }
             measurement = get_measurement_dict(params_filtered)
             station.update_measurement(measurement)
 
-            for param, value in station.latest_measurement.todict().items():
-                # if param != "date" and value is not None:
-                if param == "indoor_temperature" and value is not None:
-                    payload = {
-                        "state": str(float(getattr(station.latest_measurement, param))),
-                        "attributes": {
-                            "unit_of_measurement": "°C",
-                            "device_class": "temperature",
-                            "friendly_name": "station meteo",
-                            "updated": "2025-01-28T21:49:30+01:00",  # station.latest_measurement.date,
-                        },
-                    }
-                    response = requests.post(
-                        "http://localhost:8123/api/states/sensor.meteo",
-                        headers={
-                            "Authorization": f"Bearer {self.LLT}",
-                        },
-                        json=payload,
-                        timeout=1,
-                    )
-                    print(response.request.headers)
-                    print(response.request.body)
+            for sensor_name, payload in station.get_ha_payloads().items():
+                response = requests.post(
+                    f"http://localhost:8123/api/states/sensor.{station.id}_{sensor_name}",
+                    headers={
+                        "Authorization": f"Bearer {self.LLT}",
+                    },
+                    json=payload,
+                    timeout=1,
+                )
 
-                    print(response.text)
+                if not response.ok:
+                    logging.warning(f"URL:{response.request.url}")
+                    logging.warning(f"Headers: {response.request.headers}")
+                    logging.warning(f"JSON sent: {response.request.body}")
+                    logging.warning(f"Response: {response.text}")
 
 
 if __name__ == "__main__":
@@ -80,4 +73,4 @@ if __name__ == "__main__":
     app.route(
         "/weatherstation/updateweatherstation.php", method="GET", callback=processor
     )
-    app.run(host="localhost", port=8080, debug=True)
+    app.run(host="localhost", port=8080)

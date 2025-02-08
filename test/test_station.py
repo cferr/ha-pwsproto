@@ -42,8 +42,8 @@ def test_station_get_ha_payloads():
         station.get_ha_payloads()
 
     station.update_measurement(_sample_measurement_dict(have_date=True))
-    expected_payloads = [
-        {
+    expected_payloads = {
+        "test_float_field": {
             "state": "42.0",
             "attributes": {
                 "unit_of_measurement": "°C",
@@ -51,7 +51,7 @@ def test_station_get_ha_payloads():
                 "updated": "1999-12-31T23:59:59",
             },
         },
-        {
+        "test_int_field": {
             "state": "1013",
             "attributes": {
                 "unit_of_measurement": "hPa",
@@ -59,14 +59,14 @@ def test_station_get_ha_payloads():
                 "updated": "1999-12-31T23:59:59",
             },
         },
-    ]
+    }
     payloads = station.get_ha_payloads()
 
     assert len(payloads) == len(expected_payloads)
 
     payload_compare = []
     for p in payloads:
-        if p in expected_payloads:
+        if p in expected_payloads and expected_payloads[p] == payloads[p]:
             payload_compare += [p]
 
     assert len(payload_compare) == len(expected_payloads), (
