@@ -29,78 +29,110 @@ def identity(x: str) -> str:
 
 
 class Measurement:
-    def __init__(self, value: Any, unit: str | None = None):
+    def __init__(
+        self, value: Any, unit: str | None = None, device_class: str | None = None
+    ):
         self.value = value
         self.unit = unit
+        self.device_class = device_class
 
 
 class UrlConversion:
-    def __init__(self, name: str, fn: Callable[[str], Any], unit: str | None = None):
+    def __init__(
+        self,
+        name: str,
+        fn: Callable[[str], Any],
+        device_class: str | None = None,
+        unit: str | None = None,
+    ):
         self.name = name
         self.fn = fn
+        self.device_class = device_class
         self.unit = unit
 
     def __call__(self, param: str):
-        return Measurement(self.fn(param), self.unit)
+        return Measurement(
+            self.fn(param), unit=self.unit, device_class=self.device_class
+        )
 
 
 url_to_status_dict: dict[str, UrlConversion] = {
+    # Generic fields
     "dateutc": UrlConversion(
-        "date", lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+        "date", lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S"), "date"
     ),
-    "winddir": UrlConversion("wind_direction", identity),
+    "softwaretype": UrlConversion("software_type", identity),
+    # Wind
+    "winddir": UrlConversion("wind_direction", identity, "wind_direction"),
     "windspeedmph": UrlConversion(
-        "wind_speed", str_to_float, UnitOfSpeed.MILES_PER_HOUR
+        "wind_speed", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
     ),
     "windgustmph": UrlConversion(
-        "wind_gust_speed", str_to_float, UnitOfSpeed.MILES_PER_HOUR
+        "wind_gust_speed", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
     ),
-    "windgustdir": UrlConversion("wind_gust_direction", identity),
+    "windgustdir": UrlConversion("wind_gust_direction", identity, "wind_direction"),
     "windspdmph_avg2m": UrlConversion(
-        "wind_speed_avg_2m", str_to_float, UnitOfSpeed.MILES_PER_HOUR
+        "wind_speed_avg_2m", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
     ),
     "winddir_avg2m": UrlConversion(
-        "wind_direction_avg_2m", str_to_float, UnitOfSpeed.MILES_PER_HOUR
+        "wind_direction_avg_2m", str_to_float, "wind_direction"
     ),
     "windgustmph_10m": UrlConversion(
-        "wind_gust_speed_10m", str_to_float, UnitOfSpeed.MILES_PER_HOUR
+        "wind_gust_speed_10m", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
     ),
-    "windgustdir_10m": UrlConversion("wind_gust_direction_10m", identity),
-    "humidity": UrlConversion("outdoor_humidity", str_to_float, PERCENTAGE),
+    "windgustdir_10m": UrlConversion(
+        "wind_gust_direction_10m", identity, "wind_direction"
+    ),
+    # Outdoor temperature/pressure/humidity
+    "humidity": UrlConversion("outdoor_humidity", str_to_float, "humidity", PERCENTAGE),
     "dewptf": UrlConversion(
-        "dew_temperature", str_to_float, UnitOfTemperature.FAHRENHEIT
+        "dew_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
     ),
     "tempf": UrlConversion(
-        "outdoor_temperature", str_to_float, UnitOfTemperature.FAHRENHEIT
+        "outdoor_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
     ),
     # * for extra outdoor sensors use temp2f, temp3f, and so on
-    "rainin": UrlConversion(
-        "rain_hourly", str_to_float, UnitOfPrecipitationDepth.INCHES
+    "baromin": UrlConversion(
+        "barometric_pressure", str_to_float, "pressure", UnitOfPressure.INHG
     ),
-    "dailyrainin": UrlConversion(
-        "rain_daily", str_to_float, UnitOfPrecipitationDepth.INCHES
-    ),
-    "baromin": UrlConversion("barometric_pressure", str_to_float, UnitOfPressure.INHG),
+    # General weather info (text)
     "weather": UrlConversion("weather_text", identity),
     "clouds": UrlConversion("clouds", identity),
+    # Soil
     "soiltempf": UrlConversion(
-        "soil_temperature", str_to_float, UnitOfTemperature.FAHRENHEIT
+        "soil_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
     ),
     # * for sensors 2,3,4 use soiltemp2f, soiltemp3f, and soiltemp4f
-    "soilmoisture": UrlConversion("soil_moisture", str_to_float, PERCENTAGE),
+    "soilmoisture": UrlConversion(
+        "soil_moisture", str_to_float, "moisture", PERCENTAGE
+    ),
     # * for sensors 2,3,4 use soilmoisture2, soilmoisture3, and soilmoisture4
-    "leafwetness": UrlConversion("leaf_wetness", str_to_float, PERCENTAGE),
+    "leafwetness": UrlConversion("leaf_wetness", str_to_float, "moisture", PERCENTAGE),
     # + for sensor 2 use leafwetness2
+    # Sunlight
     "solarradiation": UrlConversion(
-        "solar_radiation", str_to_float, UnitOfIrradiance.WATTS_PER_SQUARE_METER
+        "solar_radiation",
+        str_to_float,
+        "irradiance",
+        UnitOfIrradiance.WATTS_PER_SQUARE_METER,
     ),
-    "UV": UrlConversion("uv_index", str_to_int, UV_INDEX),
+    "UV": UrlConversion("uv_index", str_to_int, None, UV_INDEX),
     "visibility": UrlConversion("nm_visibility", identity),
-    "indoortempf": UrlConversion(
-        "indoor_temperature", str_to_float, UnitOfTemperature.FAHRENHEIT
+    # Rain
+    "rainin": UrlConversion(
+        "rain_hourly", str_to_float, "precipitation", UnitOfPrecipitationDepth.INCHES
     ),
-    "indoorhumidity": UrlConversion("indoor_humidity", str_to_float, PERCENTAGE),
-    # Pollution Fields:
+    "dailyrainin": UrlConversion(
+        "rain_daily", str_to_float, "precipitation", UnitOfPrecipitationDepth.INCHES
+    ),
+    # Indoor sensors
+    "indoortempf": UrlConversion(
+        "indoor_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
+    ),
+    "indoorhumidity": UrlConversion(
+        "indoor_humidity", str_to_float, "humidity", PERCENTAGE
+    ),
+    # Air quality
     "AqNO": UrlConversion("pollution_no", str_to_int, CONCENTRATION_PARTS_PER_BILLION),
     "AqNO2T": UrlConversion(
         "pollution_no2t", str_to_int, CONCENTRATION_PARTS_PER_BILLION
@@ -158,7 +190,6 @@ url_to_status_dict: dict[str, UrlConversion] = {
     "AqOZONE": UrlConversion(
         "pollution_ozone", str_to_int, CONCENTRATION_PARTS_PER_BILLION
     ),
-    "softwaretype": UrlConversion("software_type", identity),
 }
 
 
@@ -182,7 +213,44 @@ class WeatherStation:
     id: str
     password: str
 
+    def __init__(self, id: str, password: str):
+        self.id = id
+        self.password = password
+
     latest_measurement: dict[str, Measurement] | None = None
 
     def update_measurement(self, m: dict[str, Measurement]):
         self.latest_measurement = m
+
+    def get_ha_payloads(self) -> list[dict[str, Any]]:
+        if self.latest_measurement is None:
+            raise ValueError("No measurement")
+        assert self.latest_measurement is not None
+
+        if "date" not in self.latest_measurement:
+            raise ValueError("Date absent from measurement")
+
+        latest_measurement_date: datetime.datetime = self.latest_measurement[
+            "date"
+        ].value
+
+        payloads = []
+
+        for name, measurement in self.latest_measurement.items():
+            # Do not generate a payload for the date
+            if name == "date":
+                continue
+
+            attributes = {}
+            if measurement.unit is not None:
+                attributes["unit_of_measurement"] = measurement.unit
+            if measurement.device_class is not None:
+                attributes["device_class"] = measurement.device_class
+            attributes["friendly_name"] = name
+            attributes["updated"] = str(
+                latest_measurement_date.strftime("%Y-%m-%dT%H:%M:%S%z")
+            )
+            payload = {"state": str(measurement.value), "attributes": attributes}
+            payloads += [payload]
+
+        return payloads
