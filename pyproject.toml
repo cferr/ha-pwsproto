@@ -6,7 +6,7 @@ dependencies = [
   "homeassistant",
 ]
 authors = [
-  {name = "Corentin Ferry", email = "cf@cferr.fr"},
+  {name = "Corentin Ferry", email = "corentin.ferry@cferr.fr"},
 ]
 
 [tool.pyright]

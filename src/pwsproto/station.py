@@ -56,6 +56,7 @@ class UrlConversion:
         )
 
 
+# Reference: https://support.weather.com/s/article/PWS-Upload-Protocol?language=en_US
 url_to_status_dict: dict[str, UrlConversion] = {
     # Generic fields
     "dateutc": UrlConversion(
