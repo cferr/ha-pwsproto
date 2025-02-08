@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass
 import datetime
 from typing import Callable, Any
 from homeassistant.const import (
@@ -13,6 +13,7 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_BILLION,
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
 )
+import logging
 
 
 def str_to_int(x: str) -> int:
@@ -27,6 +28,12 @@ def identity(x: str) -> str:
     return x
 
 
+class Measurement:
+    def __init__(self, value: Any, unit: str | None = None):
+        self.value = value
+        self.unit = unit
+
+
 class UrlConversion:
     def __init__(self, name: str, fn: Callable[[str], Any], unit: str | None = None):
         self.name = name
@@ -34,7 +41,7 @@ class UrlConversion:
         self.unit = unit
 
     def __call__(self, param: str):
-        return self.fn(param)
+        return Measurement(self.fn(param), self.unit)
 
 
 url_to_status_dict: dict[str, UrlConversion] = {
@@ -155,68 +162,19 @@ url_to_status_dict: dict[str, UrlConversion] = {
 }
 
 
-@dataclass
-class Measurement:
-    date: datetime.datetime | None = None
-    # Wind
-    wind_direction: int | None = None
-    wind_speed: int | None = None
-    wind_gust_speed: int | None = None
-    wind_gust_direction: int | None = None
-    wind_speed_avg_2m: int | None = None
-    wind_direction_avg_2m: int | None = None
-    wind_gust_speed_10m: int | None = None
-    wind_gust_direction_10m: int | None = None
-    # Outdoor sensor
-    outdoor_humidity: int | None = None
-    dew_temperature: int | None = None
-    outdoor_temperature: int | None = None
-    # Rain
-    rain_hourly: int | None = None
-    rain_daily: int | None = None
-    # Pressure
-    barometric_pressure: int | None = None
-    # Synthetic
-    weather_text: int | None = None
-    clouds: int | None = None
-    # Soil
-    soil_temperature: int | None = None
-    soil_moisture: int | None = None
-    leaf_wetness: int | None = None
-    # Sun
-    solar_radiation: int | None = None
-    uv_index: int | None = None
-    nm_visibility: int | None = None
-    # Indoor
-    indoor_temperature: int | None = None
-    indoor_humidity: int | None = None
-    # Pollution
-    pollution_no: int | None = None
-    pollution_no2t: int | None = None
-    pollution_no2: int | None = None
-    pollution_no2y: int | None = None
-    pollution_nox: int | None = None
-    pollution_noy: int | None = None
-    pollution_no3_ion: int | None = None
-    pollution_so4_ion: int | None = None
-    pollution_sulfur_dioxide: int | None = None
-    pollution_sulfur_dioxide_trace: int | None = None
-    pollution_carbon_monoxide: int | None = None
-    pollution_carbon_monoxide_trace: int | None = None
-    pollution_elemental_carbon: int | None = None
-    pollution_organic_carbon: int | None = None
-    pollution_black_carbon: int | None = None
-    pollution_uv_aeth: int | None = None
-    pollution_pm25_mass: int | None = None
-    pollution_pm10_mass: int | None = None
-    pollution_ozone: int | None = None
-    software_type: str | None = None
-
-    def fields(self):
-        return fields(self)
-
-    def todict(self):
-        return asdict(self)
+def get_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
+    measurement_dict: dict[str, Measurement] = {}
+    for given_param, value in fields.items():
+        for expected_param in url_to_status_dict:
+            if given_param == expected_param:
+                converter = url_to_status_dict[expected_param]
+                try:
+                    converted_value = converter(value)
+                    measurement_dict[converter.name] = converted_value
+                except ValueError as err:
+                    logging.warning(f"Parameter error for {given_param}: {err}")
+                    pass
+    return measurement_dict
 
 
 @dataclass
@@ -224,7 +182,7 @@ class WeatherStation:
     id: str
     password: str
 
-    latest_measurement: Measurement | None = None
+    latest_measurement: dict[str, Measurement] | None = None
 
-    def update_measurement(self, m: Measurement):
+    def update_measurement(self, m: dict[str, Measurement]):
         self.latest_measurement = m

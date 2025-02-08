@@ -5,7 +5,7 @@ import requests
 import logging
 import os
 
-from pwsproto.station import WeatherStation, Measurement, url_to_status_dict
+from pwsproto.station import WeatherStation, get_measurement_dict
 
 
 class RequestProcessor:
@@ -29,13 +29,10 @@ class RequestProcessor:
         )
 
         for station in stations_auth:
-            measurement = Measurement()
-            for param in params:
-                if param not in url_to_status_dict:
-                    continue
-                # TODO: cast
-                converter = url_to_status_dict[param]
-                setattr(measurement, converter.name, converter(params[param]))
+            params_filtered = {
+                key: value for key, value in params if key not in ["ID", "PASSWORD"]
+            }
+            measurement = get_measurement_dict(params_filtered)
             station.update_measurement(measurement)
 
             for param, value in station.latest_measurement.todict().items():
