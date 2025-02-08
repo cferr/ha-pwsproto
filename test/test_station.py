@@ -5,8 +5,8 @@ import pytest
 
 def _sample_measurement_dict(have_date: bool = True) -> dict[str, Measurement]:
     measurement_dict = {
-        "test_float_field": Measurement(42.0, "°C"),
-        "test_int_field": Measurement(1013, "hPa"),
+        "test_float_field": Measurement(42.0, "°C", "temperature"),
+        "test_int_field": Measurement(1013, "hPa", "pressure"),
     }
     if have_date:
         measurement_dict.update(
@@ -47,6 +47,7 @@ def test_station_get_ha_payloads():
             "state": "42.0",
             "attributes": {
                 "unit_of_measurement": "°C",
+                "device_class": "temperature",
                 "friendly_name": "test_float_field",
                 "updated": "1999-12-31T23:59:59",
             },
@@ -55,6 +56,7 @@ def test_station_get_ha_payloads():
             "state": "1013",
             "attributes": {
                 "unit_of_measurement": "hPa",
+                "device_class": "pressure",
                 "friendly_name": "test_int_field",
                 "updated": "1999-12-31T23:59:59",
             },
