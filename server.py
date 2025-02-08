@@ -5,6 +5,7 @@ from bottle import Bottle, run, post, request, response, get, route
 import json
 import requests
 import logging
+import os
 
 from station import BresserStation, Measurement, url_to_status_dict
 
@@ -42,7 +43,8 @@ def process_get():
             if param not in url_to_status_dict:
                 continue
             # TODO: cast
-            setattr(measurement, url_to_status_dict[param], request.params[param])
+            converter = url_to_status_dict[param]
+            setattr(measurement, converter.name, converter(request.params[param]))
         station.update_measurement(measurement)
 
         for param, value in station.latest_measurement.todict().items():
