@@ -1,0 +1,19 @@
+[project]
+name = "pwsproto"
+version = "0.0.1"
+dependencies = [
+  "bottle",
+  "homeassistant",
+]
+authors = [
+  {name = "Corentin Ferry", email = "cf@cferr.fr"},
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
