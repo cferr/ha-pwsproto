@@ -196,8 +196,10 @@ url_to_status_dict: dict[str, UrlConversion] = {
 def get_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
     measurement_dict: dict[str, Measurement] = {}
     for given_param, value in fields.items():
+        param_matched = False
         for expected_param in url_to_status_dict:
             if given_param == expected_param:
+                param_matched = True
                 converter = url_to_status_dict[expected_param]
                 try:
                     converted_value = converter(value)
@@ -205,6 +207,10 @@ def get_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
                 except ValueError as err:
                     logging.warning(f"Parameter error for {given_param}: {err}")
                     pass
+                break
+        if not param_matched:
+            logging.warning(f"Unknown parameter: {given_param}")
+
     return measurement_dict
 
 

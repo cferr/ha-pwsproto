@@ -1,4 +1,5 @@
 from pwsproto.station import get_measurement_dict, url_to_status_dict, Measurement
+import logging
 
 
 def test_measurement():
@@ -18,10 +19,12 @@ def test_get_measurement_dict():
     assert sample_measurements[expected_name].value == 42.0
 
 
-def test_get_measurement_dict_unknown():
-    sample_measurements = get_measurement_dict(
-        {
-            "nonxist": "42.0",
-        }
-    )
-    assert len(sample_measurements) == 0
+def test_get_measurement_dict_unknown(caplog):
+    with caplog.at_level(logging.WARNING):
+        sample_measurements = get_measurement_dict(
+            {
+                "nonxist": "42.0",
+            }
+        )
+        assert len(sample_measurements) == 0
+        assert "Unknown parameter: nonxist" in caplog.text
