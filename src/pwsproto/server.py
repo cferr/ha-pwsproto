@@ -5,39 +5,34 @@ import logging
 import os
 import argparse
 
-from pwsproto.station import WeatherStation, get_measurement_dict
-from pwsproto.ha_http_client import update_ha_sensor
+from pwsproto.station import WeatherStation
+from pwsproto.ha_http_client import UpdateHAAPI
 
 
 class RequestProcessor:
     def __init__(
         self,
         stations: list[WeatherStation],
-        LLT: str,
-        ha_host: str,
-        ha_port: int | None = None,
-        ha_use_https: bool = False,
     ):
         self.stations = stations
-        self.LLT = LLT
-        self.ha_host = ha_host
-        self.ha_port = ha_port
-        self.ha_use_https = ha_use_https
 
-    def __call__(self):
+    def process_request(self, params: dict[str, str]) -> None:
         # Grab ID, password
-        params: FormsDict = request.params  # type: ignore
-
         if "ID" not in params or "PASSWORD" not in params:
             raise NotImplementedError
 
         id = params["ID"]
         password = params["PASSWORD"]
 
-        stations_auth = filter(
-            lambda station: station.id == id and station.password == password,
-            self.stations,
+        stations_auth = list(
+            filter(
+                lambda station: station.id == id and station.password == password,
+                self.stations,
+            )
         )
+
+        if len(stations_auth) == 0:
+            raise PermissionError("Invalid station ID/password")
 
         for station in stations_auth:
             params_filtered = {
@@ -45,22 +40,15 @@ class RequestProcessor:
                 for key, value in params.items()
                 if key not in ["ID", "PASSWORD"]
             }
-            measurement = get_measurement_dict(params_filtered)
-            station.update_measurement(measurement)
+            station.update_measurement_from_pws_params(params_filtered)
 
-            for sensor_name, payload in station.get_ha_payloads().items():
-                update_ha_sensor(
-                    self.ha_host,
-                    self.LLT,
-                    station.id,
-                    sensor_name,
-                    payload,
-                    ha_use_https=self.ha_use_https,
-                    ha_port=self.ha_port,
-                )
+    def __call__(self):
+        params: FormsDict = request.params  # type: ignore
+        params_dict: dict[str, str] = {key: params[key] for key in params}
+        self.process_request(params_dict)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ha-host", type=str, required=True)
     parser.add_argument("--ha-port", type=int, required=False, default=8123)
@@ -71,28 +59,36 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Initialize stations
-    station = WeatherStation(id="KCASANFR5", password="XXXXXX")
-    stations: list[WeatherStation] = [station]
-
     # Get HA long-lived token
     if "LLT" not in os.environ:
         logging.error("Set the LLT environment variable")
         exit(1)
 
     LLT = os.environ["LLT"]
-
-    processor = RequestProcessor(
-        stations,
-        LLT,
+    # Standalone mode: HomeAssistant API Updater
+    update_ha_api = UpdateHAAPI(
+        LLT=LLT,
         ha_host=args.ha_host,
         ha_port=args.ha_port,
         ha_use_https=args.ha_use_https,
     )
 
+    # Initialize stations
+    station = WeatherStation(
+        id="KCASANFR5", password="XXXXXX", update_callback=update_ha_api
+    )
+    stations: list[WeatherStation] = [station]
+
     # Create and run server
+    request_processor = RequestProcessor(stations)
     app = Bottle()
     app.route(
-        "/weatherstation/updateweatherstation.php", method="GET", callback=processor
+        "/weatherstation/updateweatherstation.php",
+        method="GET",
+        callback=request_processor,
     )
     app.run(host=args.pws_listen, port=args.pws_port)
+
+
+if __name__ == "__main__":
+    main()

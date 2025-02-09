@@ -23,7 +23,7 @@ def test_station_basic():
 
 def test_station_update():
     station = WeatherStation("test_user", "test_password")
-    station.update_measurement(_sample_measurement_dict(have_date=True))
+    station.latest_measurement = _sample_measurement_dict(have_date=True)
     assert station.latest_measurement is not None
     assert "test_float_field" in station.latest_measurement
     assert "test_int_field" in station.latest_measurement
@@ -37,11 +37,11 @@ def test_station_get_ha_payloads():
     with pytest.raises(ValueError, match="No measurement"):
         station.get_ha_payloads()
 
-    station.update_measurement(_sample_measurement_dict(have_date=False))
+    station.latest_measurement = _sample_measurement_dict(have_date=False)
     with pytest.raises(ValueError, match="Date absent from measurement"):
         station.get_ha_payloads()
 
-    station.update_measurement(_sample_measurement_dict(have_date=True))
+    station.latest_measurement = _sample_measurement_dict(have_date=True)
     expected_payloads = {
         "test_float_field": {
             "state": "42.0",

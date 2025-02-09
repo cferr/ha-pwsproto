@@ -194,7 +194,7 @@ url_to_status_dict: dict[str, UrlConversion] = {
 }
 
 
-def get_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
+def _pws_to_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
     measurement_dict: dict[str, Measurement] = {}
     for given_param, value in fields.items():
         param_matched = False
@@ -219,15 +219,24 @@ def get_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
 class WeatherStation:
     id: str
     password: str
+    update_callback: Callable[["WeatherStation"], None] | None
 
-    def __init__(self, id: str, password: str):
+    def __init__(
+        self,
+        id: str,
+        password: str,
+        update_callback: Callable[["WeatherStation"], None] | None = None,
+    ):
         self.id = id
         self.password = password
+        self.update_callback = update_callback
 
     latest_measurement: dict[str, Measurement] | None = None
 
-    def update_measurement(self, m: dict[str, Measurement]):
-        self.latest_measurement = m
+    def update_measurement_from_pws_params(self, raw_pws_params: dict[str, str]):
+        self.latest_measurement = _pws_to_measurement_dict(raw_pws_params)
+        if self.update_callback is not None:
+            self.update_callback(self)
 
     def get_ha_payloads(self) -> dict[str, dict[str, Any]]:
         if self.latest_measurement is None:

@@ -1,4 +1,4 @@
-from pwsproto.station import get_measurement_dict, url_to_status_dict, Measurement
+from pwsproto.station import _pws_to_measurement_dict, url_to_status_dict, Measurement
 import logging
 
 
@@ -8,8 +8,8 @@ def test_measurement():
     assert sample_measurement.unit == "°C"
 
 
-def test_get_measurement_dict():
-    sample_measurements = get_measurement_dict(
+def test_pws_to_measurement_dict():
+    sample_measurements = _pws_to_measurement_dict(
         {
             "tempf": "42.0",
         }
@@ -19,9 +19,9 @@ def test_get_measurement_dict():
     assert sample_measurements[expected_name].value == 42.0
 
 
-def test_get_measurement_dict_unknown(caplog):
+def test_pws_to_measurement_dict_unknown(caplog):
     with caplog.at_level(logging.WARNING):
-        sample_measurements = get_measurement_dict(
+        sample_measurements = _pws_to_measurement_dict(
             {
                 "nonxist": "42.0",
             }
