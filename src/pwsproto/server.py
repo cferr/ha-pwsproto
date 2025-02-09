@@ -7,40 +7,15 @@ import argparse
 
 from pwsproto.station import WeatherStation
 from pwsproto.ha_http_client import UpdateHAAPI
+from pwsproto.pws_request import PWSRequestProcessor
 
 
-class RequestProcessor:
+class RequestProcessor(PWSRequestProcessor):
     def __init__(
         self,
         stations: list[WeatherStation],
     ):
-        self.stations = stations
-
-    def process_request(self, params: dict[str, str]) -> None:
-        # Grab ID, password
-        if "ID" not in params or "PASSWORD" not in params:
-            raise NotImplementedError
-
-        id = params["ID"]
-        password = params["PASSWORD"]
-
-        stations_auth = list(
-            filter(
-                lambda station: station.id == id and station.password == password,
-                self.stations,
-            )
-        )
-
-        if len(stations_auth) == 0:
-            raise PermissionError("Invalid station ID/password")
-
-        for station in stations_auth:
-            params_filtered = {
-                key: value
-                for key, value in params.items()
-                if key not in ["ID", "PASSWORD"]
-            }
-            station.update_measurement_from_pws_params(params_filtered)
+        super().__init__(stations)
 
     def __call__(self):
         params: FormsDict = request.params  # type: ignore
@@ -57,7 +32,12 @@ def main():
     parser.add_argument("--pws-listen", type=str, required=False, default="127.0.0.1")
     parser.add_argument("--pws-port", type=int, required=False, default=8080)
 
+    parser.add_argument("--pws-station-id", type=str, required=True)
+    parser.add_argument("--pws-station-password", type=str, required=True)
+
     args = parser.parse_args()
+
+    # Standalone mode: HomeAssistant API Updater
 
     # Get HA long-lived token
     if "LLT" not in os.environ:
@@ -65,7 +45,7 @@ def main():
         exit(1)
 
     LLT = os.environ["LLT"]
-    # Standalone mode: HomeAssistant API Updater
+
     update_ha_api = UpdateHAAPI(
         LLT=LLT,
         ha_host=args.ha_host,
@@ -75,7 +55,9 @@ def main():
 
     # Initialize stations
     station = WeatherStation(
-        id="KCASANFR5", password="XXXXXX", update_callback=update_ha_api
+        id=args.pws_station_id,
+        password=args.pws_station_password,
+        update_callback=update_ha_api,
     )
     stations: list[WeatherStation] = [station]
 

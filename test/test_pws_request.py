@@ -1,6 +1,6 @@
 from typing import Callable
 
-from pwsproto.server import RequestProcessor
+from pwsproto.pws_request import PWSRequestProcessor
 from pwsproto.station import WeatherStation
 
 import pytest
@@ -46,13 +46,13 @@ def _sample_request(station_number: int, valid_password: bool) -> dict[str, str]
 
 
 def test_request_processor_basic():
-    processor = RequestProcessor(_sample_stations(1))
+    processor = PWSRequestProcessor(_sample_stations(1))
     assert len(processor.stations) == 1
 
 
 def test_request_processor_auth():
     stations = _sample_stations(1)
-    processor = RequestProcessor(stations)
+    processor = PWSRequestProcessor(stations)
     request_station0 = _sample_request(0, True)
     processor.process_request(request_station0)
     assert stations[0].latest_measurement is not None
@@ -60,7 +60,7 @@ def test_request_processor_auth():
 
 def test_request_processor_auth_fail():
     stations = _sample_stations(1)
-    processor = RequestProcessor(stations)
+    processor = PWSRequestProcessor(stations)
     with pytest.raises(PermissionError, match="Invalid station ID/password"):
         request_station0 = _sample_request(0, False)
         processor.process_request(request_station0)
@@ -69,7 +69,7 @@ def test_request_processor_auth_fail():
 
 def test_request_processor_auth_multiple():
     stations = _sample_stations(2)
-    processor = RequestProcessor(stations)
+    processor = PWSRequestProcessor(stations)
     request_station1 = _sample_request(1, True)
     processor.process_request(request_station1)
     assert stations[0].latest_measurement is None
@@ -78,7 +78,7 @@ def test_request_processor_auth_multiple():
 
 def test_request_processor_auth_fail_multiple():
     stations = _sample_stations(2)
-    processor = RequestProcessor(stations)
+    processor = PWSRequestProcessor(stations)
     request_station0 = _sample_request(0, True)
     processor.process_request(request_station0)
     assert stations[0].latest_measurement is not None
