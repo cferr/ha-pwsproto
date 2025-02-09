@@ -13,6 +13,7 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_BILLION,
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
 )
+from homeassistant.components.sensor.const import SensorDeviceClass
 import logging
 
 
@@ -60,136 +61,205 @@ class UrlConversion:
 url_to_status_dict: dict[str, UrlConversion] = {
     # Generic fields
     "dateutc": UrlConversion(
-        "date", lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S"), "date"
+        "date",
+        lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S"),
+        device_class=SensorDeviceClass.DATE,
     ),
     "softwaretype": UrlConversion("software_type", identity),
     # Wind
     "winddir": UrlConversion("wind_direction", identity, "wind_direction"),
     "windspeedmph": UrlConversion(
-        "wind_speed", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
+        "wind_speed",
+        str_to_float,
+        device_class=SensorDeviceClass.WIND_SPEED,
+        unit=UnitOfSpeed.MILES_PER_HOUR,
     ),
     "windgustmph": UrlConversion(
-        "wind_gust_speed", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
+        "wind_gust_speed",
+        str_to_float,
+        device_class=SensorDeviceClass.WIND_SPEED,
+        unit=UnitOfSpeed.MILES_PER_HOUR,
     ),
     "windgustdir": UrlConversion("wind_gust_direction", identity, "wind_direction"),
     "windspdmph_avg2m": UrlConversion(
-        "wind_speed_avg_2m", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
+        "wind_speed_avg_2m",
+        str_to_float,
+        device_class=SensorDeviceClass.WIND_SPEED,
+        unit=UnitOfSpeed.MILES_PER_HOUR,
     ),
     "winddir_avg2m": UrlConversion(
         "wind_direction_avg_2m", str_to_float, "wind_direction"
     ),
     "windgustmph_10m": UrlConversion(
-        "wind_gust_speed_10m", str_to_float, "wind_speed", UnitOfSpeed.MILES_PER_HOUR
+        "wind_gust_speed_10m",
+        str_to_float,
+        device_class=SensorDeviceClass.WIND_SPEED,
+        unit=UnitOfSpeed.MILES_PER_HOUR,
     ),
     "windgustdir_10m": UrlConversion(
         "wind_gust_direction_10m", identity, "wind_direction"
     ),
     # Outdoor temperature/pressure/humidity
-    "humidity": UrlConversion("outdoor_humidity", str_to_float, "humidity", PERCENTAGE),
+    "humidity": UrlConversion(
+        "outdoor_humidity",
+        str_to_float,
+        device_class=SensorDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
+    ),
     "dewptf": UrlConversion(
-        "dew_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
+        "dew_temperature",
+        str_to_float,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.FAHRENHEIT,
     ),
     "tempf": UrlConversion(
-        "outdoor_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
+        "outdoor_temperature",
+        str_to_float,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.FAHRENHEIT,
     ),
     # * for extra outdoor sensors use temp2f, temp3f, and so on
     "baromin": UrlConversion(
-        "barometric_pressure", str_to_float, "pressure", UnitOfPressure.INHG
+        "barometric_pressure",
+        str_to_float,
+        device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
+        unit=UnitOfPressure.INHG,
     ),
     # General weather info (text)
     "weather": UrlConversion("weather_text", identity),
     "clouds": UrlConversion("clouds", identity),
     # Soil
     "soiltempf": UrlConversion(
-        "soil_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
+        "soil_temperature",
+        str_to_float,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.FAHRENHEIT,
     ),
     # * for sensors 2,3,4 use soiltemp2f, soiltemp3f, and soiltemp4f
     "soilmoisture": UrlConversion(
-        "soil_moisture", str_to_float, "moisture", PERCENTAGE
+        "soil_moisture",
+        str_to_float,
+        device_class=SensorDeviceClass.MOISTURE,
+        unit=PERCENTAGE,
     ),
     # * for sensors 2,3,4 use soilmoisture2, soilmoisture3, and soilmoisture4
-    "leafwetness": UrlConversion("leaf_wetness", str_to_float, "moisture", PERCENTAGE),
+    "leafwetness": UrlConversion(
+        "leaf_wetness",
+        str_to_float,
+        device_class=SensorDeviceClass.MOISTURE,
+        unit=PERCENTAGE,
+    ),
     # + for sensor 2 use leafwetness2
     # Sunlight
     "solarradiation": UrlConversion(
         "solar_radiation",
         str_to_float,
-        "irradiance",
-        UnitOfIrradiance.WATTS_PER_SQUARE_METER,
+        device_class=SensorDeviceClass.IRRADIANCE,
+        unit=UnitOfIrradiance.WATTS_PER_SQUARE_METER,
     ),
     "UV": UrlConversion("uv_index", str_to_int, None, UV_INDEX),
     "visibility": UrlConversion("nm_visibility", identity),
     # Rain
     "rainin": UrlConversion(
-        "rain_hourly", str_to_float, "precipitation", UnitOfPrecipitationDepth.INCHES
+        "rain_hourly",
+        str_to_float,
+        device_class=SensorDeviceClass.PRECIPITATION,
+        unit=UnitOfPrecipitationDepth.INCHES,
     ),
     "dailyrainin": UrlConversion(
-        "rain_daily", str_to_float, "precipitation", UnitOfPrecipitationDepth.INCHES
+        "rain_daily",
+        str_to_float,
+        device_class=SensorDeviceClass.PRECIPITATION,
+        unit=UnitOfPrecipitationDepth.INCHES,
     ),
     # Indoor sensors
     "indoortempf": UrlConversion(
-        "indoor_temperature", str_to_float, "temperature", UnitOfTemperature.FAHRENHEIT
+        "indoor_temperature",
+        str_to_float,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.FAHRENHEIT,
     ),
     "indoorhumidity": UrlConversion(
-        "indoor_humidity", str_to_float, "humidity", PERCENTAGE
+        "indoor_humidity",
+        str_to_float,
+        device_class=SensorDeviceClass.HUMIDITY,
+        unit=PERCENTAGE,
     ),
     # Air quality
-    "AqNO": UrlConversion("pollution_no", str_to_int, CONCENTRATION_PARTS_PER_BILLION),
+    "AqNO": UrlConversion(
+        "pollution_no", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    ),
     "AqNO2T": UrlConversion(
-        "pollution_no2t", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_no2t", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqNO2": UrlConversion(
-        "pollution_no2", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_no2", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqNO2Y": UrlConversion(
-        "pollution_no2y", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_no2y", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqNOX": UrlConversion(
-        "pollution_nox", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_nox", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqNOY": UrlConversion(
-        "pollution_noy", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_noy", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqNO3": UrlConversion(
-        "pollution_no3_ion", str_to_float, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        "pollution_no3_ion", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
     ),
     "AqSO4": UrlConversion(
-        "pollution_so4_ion", str_to_float, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        "pollution_so4_ion", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
     ),
     "AqSO2": UrlConversion(
-        "pollution_sulfur_dioxide", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_sulfur_dioxide", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
     "AqSO2T": UrlConversion(
-        "pollution_sulfur_dioxide_trace", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_sulfur_dioxide_trace",
+        str_to_int,
+        unit=CONCENTRATION_PARTS_PER_BILLION,
     ),
     "AqCO": UrlConversion(
-        "pollution_carbon_monoxide", str_to_int, CONCENTRATION_PARTS_PER_MILLION
+        "pollution_carbon_monoxide",
+        str_to_int,
+        device_class=SensorDeviceClass.CO,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
     ),
     "AqCOT": UrlConversion(
-        "pollution_carbon_monoxide_trace", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_carbon_monoxide_trace",
+        str_to_int,
+        unit=CONCENTRATION_PARTS_PER_BILLION,
     ),
     "AqEC": UrlConversion(
         "pollution_elemental_carbon",
         str_to_float,
-        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
     "AqOC": UrlConversion(
         "pollution_organic_carbon",
         str_to_float,
-        CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
     "AqBC": UrlConversion(
-        "pollution_black_carbon", str_to_float, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        "pollution_black_carbon",
+        str_to_float,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
     "AqUV": UrlConversion(
-        "pollution_uv_aeth", str_to_float, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        "pollution_uv_aeth", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
     ),
     "AqPM2.5": UrlConversion(
-        "pollution_pm25_mass", str_to_float, CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+        "pollution_pm25_mass",
+        str_to_float,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqPM10": UrlConversion("pollution_pm10_mass", str_to_float),
+    "AqPM10": UrlConversion(
+        "pollution_pm10_mass",
+        str_to_float,
+        device_class=SensorDeviceClass.PM10,
+        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    ),
     "AqOZONE": UrlConversion(
-        "pollution_ozone", str_to_int, CONCENTRATION_PARTS_PER_BILLION
+        "pollution_ozone", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
     ),
 }
 

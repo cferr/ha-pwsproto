@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from bottle import Bottle, request, FormsDict
+from bottle import Bottle, FormsDict, HTTPError, request
 import logging
 import os
 import argparse
@@ -20,7 +20,10 @@ class RequestProcessor(PWSRequestProcessor):
     def __call__(self):
         params: FormsDict = request.params  # type: ignore
         params_dict: dict[str, str] = {key: params[key] for key in params}
-        self.process_request(params_dict)
+        try:
+            self.process_request(params_dict)
+        except PermissionError as e:
+            raise HTTPError(status=403, body=str(e))
 
 
 def main():
