@@ -1,4 +1,8 @@
-from pwsproto.station import _pws_to_measurement_dict, url_to_status_dict, Measurement
+from pwsproto.pws_request import (
+    _pws_to_measurement_dict,
+    url_param_to_status_dict,
+    Measurement,
+)
 import logging
 
 
@@ -15,7 +19,7 @@ def test_pws_to_measurement_dict():
         }
     )
     assert len(sample_measurements) == 1
-    expected_name = url_to_status_dict["tempf"].name
+    expected_name = url_param_to_status_dict["tempf"].sensor_name
     assert sample_measurements[expected_name].value == 42.0
 
 

@@ -3,6 +3,7 @@ from typing import Callable
 from pwsproto.pws_request import PWSRequestProcessor
 from pwsproto.station import WeatherStation
 
+from unittest.mock import MagicMock
 import pytest
 
 
@@ -22,7 +23,7 @@ def _sample_request_dict(id: str, password: str) -> dict[str, str]:
     return {
         "ID": id,
         "PASSWORD": password,
-        "dateutc": "2000-01-01+10%3A32%3A35",
+        "dateutc": "2000-01-01 10:32:35",
         "winddir": "230",
         "windspeedmph": "12",
         "windgustmph": "12",
@@ -51,38 +52,41 @@ def test_request_processor_basic():
 
 
 def test_request_processor_auth():
-    stations = _sample_stations(1)
+    callback = MagicMock()
+    stations = _sample_stations(1, callback)
     processor = PWSRequestProcessor(stations)
     request_station0 = _sample_request(0, True)
     processor.process_request(request_station0)
-    assert stations[0].latest_measurement is not None
+    callback.assert_called_once_with(stations[0])
 
 
 def test_request_processor_auth_fail():
-    stations = _sample_stations(1)
+    callback = MagicMock()
+    stations = _sample_stations(1, callback)
     processor = PWSRequestProcessor(stations)
     with pytest.raises(PermissionError, match="Invalid station ID/password"):
         request_station0 = _sample_request(0, False)
         processor.process_request(request_station0)
-        assert stations[0].latest_measurement is None
+        callback.assert_not_called()
 
 
 def test_request_processor_auth_multiple():
-    stations = _sample_stations(2)
+    callback = MagicMock()
+    stations = _sample_stations(2, callback)
     processor = PWSRequestProcessor(stations)
     request_station1 = _sample_request(1, True)
     processor.process_request(request_station1)
-    assert stations[0].latest_measurement is None
-    assert stations[1].latest_measurement is not None
+    callback.assert_called_once_with(stations[1])
 
 
 def test_request_processor_auth_fail_multiple():
-    stations = _sample_stations(2)
+    callback = MagicMock()
+    stations = _sample_stations(2, callback)
     processor = PWSRequestProcessor(stations)
     request_station0 = _sample_request(0, True)
     processor.process_request(request_station0)
-    assert stations[0].latest_measurement is not None
+    callback.assert_called_once_with(stations[0])
     with pytest.raises(PermissionError, match="Invalid station ID/password"):
         request_station1 = _sample_request(1, False)
         processor.process_request(request_station1)
-        assert stations[1].latest_measurement is None
+        callback.assert_not_called()

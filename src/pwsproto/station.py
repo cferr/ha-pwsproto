@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import datetime
 from typing import Callable, Any
 from homeassistant.const import (
@@ -14,7 +13,7 @@ from homeassistant.const import (
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
 )
 from homeassistant.components.sensor.const import SensorDeviceClass
-import logging
+from homeassistant.components.sensor import SensorEntityDescription
 
 
 def str_to_int(x: str) -> int:
@@ -30,313 +29,278 @@ def identity(x: str) -> str:
 
 
 class Measurement:
-    def __init__(
-        self, value: Any, unit: str | None = None, device_class: str | None = None
-    ):
+    def __init__(self, value: Any, unit: str | None = None):
         self.value = value
         self.unit = unit
-        self.device_class = device_class
 
 
-class UrlConversion:
-    def __init__(
-        self,
-        name: str,
-        fn: Callable[[str], Any],
-        device_class: str | None = None,
-        unit: str | None = None,
-    ):
-        self.name = name
-        self.fn = fn
-        self.device_class = device_class
-        self.unit = unit
-
-    def __call__(self, param: str):
-        return Measurement(
-            self.fn(param), unit=self.unit, device_class=self.device_class
-        )
-
-
-# Reference: https://support.weather.com/s/article/PWS-Upload-Protocol?language=en_US
-url_to_status_dict: dict[str, UrlConversion] = {
+SENSOR_MAPPING: dict[str, SensorEntityDescription] = {
     # Generic fields
-    "dateutc": UrlConversion(
-        "date",
-        lambda s: datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S"),
-        device_class=SensorDeviceClass.DATE,
-    ),
-    "softwaretype": UrlConversion("software_type", identity),
+    "software_type": SensorEntityDescription(key="software_type"),
     # Wind
-    "winddir": UrlConversion("wind_direction", identity, "wind_direction"),
-    "windspeedmph": UrlConversion(
-        "wind_speed",
-        str_to_float,
+    "wind_direction": SensorEntityDescription(key="wind_direction"),
+    "wind_speed": SensorEntityDescription(
+        key="wind_speed",
         device_class=SensorDeviceClass.WIND_SPEED,
-        unit=UnitOfSpeed.MILES_PER_HOUR,
+        native_unit_of_measurement=UnitOfSpeed.MILES_PER_HOUR,
     ),
-    "windgustmph": UrlConversion(
-        "wind_gust_speed",
-        str_to_float,
+    "wind_gust_speed": SensorEntityDescription(
+        key="wind_gust_speed",
         device_class=SensorDeviceClass.WIND_SPEED,
-        unit=UnitOfSpeed.MILES_PER_HOUR,
+        native_unit_of_measurement=UnitOfSpeed.MILES_PER_HOUR,
     ),
-    "windgustdir": UrlConversion("wind_gust_direction", identity, "wind_direction"),
-    "windspdmph_avg2m": UrlConversion(
-        "wind_speed_avg_2m",
-        str_to_float,
+    "windgustdir": SensorEntityDescription(key="wind_gust_direction"),
+    "wind_speed_avg_2m": SensorEntityDescription(
+        key="wind_speed_avg_2m",
         device_class=SensorDeviceClass.WIND_SPEED,
-        unit=UnitOfSpeed.MILES_PER_HOUR,
+        native_unit_of_measurement=UnitOfSpeed.MILES_PER_HOUR,
     ),
-    "winddir_avg2m": UrlConversion(
-        "wind_direction_avg_2m", str_to_float, "wind_direction"
-    ),
-    "windgustmph_10m": UrlConversion(
-        "wind_gust_speed_10m",
-        str_to_float,
+    "winddir_avg2m": SensorEntityDescription(key="wind_direction_avg_2m"),
+    "wind_gust_speed_10m": SensorEntityDescription(
+        key="wind_gust_speed_10m",
         device_class=SensorDeviceClass.WIND_SPEED,
-        unit=UnitOfSpeed.MILES_PER_HOUR,
+        native_unit_of_measurement=UnitOfSpeed.MILES_PER_HOUR,
     ),
-    "windgustdir_10m": UrlConversion(
-        "wind_gust_direction_10m", identity, "wind_direction"
-    ),
+    "wind_gust_direction_10m": SensorEntityDescription(key="wind_gust_direction_10m"),
     # Outdoor temperature/pressure/humidity
-    "humidity": UrlConversion(
-        "outdoor_humidity",
-        str_to_float,
+    "outdoor_humidity": SensorEntityDescription(
+        key="outdoor_humidity",
         device_class=SensorDeviceClass.HUMIDITY,
-        unit=PERCENTAGE,
+        native_unit_of_measurement=PERCENTAGE,
     ),
-    "dewptf": UrlConversion(
-        "dew_temperature",
-        str_to_float,
+    "dew_temperature": SensorEntityDescription(
+        key="dew_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
     ),
-    "tempf": UrlConversion(
-        "outdoor_temperature",
-        str_to_float,
+    "outdoor_temperature": SensorEntityDescription(
+        key="outdoor_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
     ),
     # * for extra outdoor sensors use temp2f, temp3f, and so on
-    "baromin": UrlConversion(
-        "barometric_pressure",
-        str_to_float,
+    "barometric_pressure": SensorEntityDescription(
+        key="barometric_pressure",
         device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
-        unit=UnitOfPressure.INHG,
+        native_unit_of_measurement=UnitOfPressure.INHG,
     ),
     # General weather info (text)
-    "weather": UrlConversion("weather_text", identity),
-    "clouds": UrlConversion("clouds", identity),
+    "weather_text": SensorEntityDescription(key="weather_text"),
+    "clouds": SensorEntityDescription(key="clouds"),
     # Soil
-    "soiltempf": UrlConversion(
-        "soil_temperature",
-        str_to_float,
+    "soil_temperature": SensorEntityDescription(
+        key="soil_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
     ),
     # * for sensors 2,3,4 use soiltemp2f, soiltemp3f, and soiltemp4f
-    "soilmoisture": UrlConversion(
-        "soil_moisture",
-        str_to_float,
+    "soil_moisture": SensorEntityDescription(
+        key="soil_moisture",
         device_class=SensorDeviceClass.MOISTURE,
-        unit=PERCENTAGE,
+        native_unit_of_measurement=PERCENTAGE,
     ),
     # * for sensors 2,3,4 use soilmoisture2, soilmoisture3, and soilmoisture4
-    "leafwetness": UrlConversion(
-        "leaf_wetness",
-        str_to_float,
+    "leaf_wetness": SensorEntityDescription(
+        key="leaf_wetness",
         device_class=SensorDeviceClass.MOISTURE,
-        unit=PERCENTAGE,
+        native_unit_of_measurement=PERCENTAGE,
     ),
     # + for sensor 2 use leafwetness2
     # Sunlight
-    "solarradiation": UrlConversion(
-        "solar_radiation",
-        str_to_float,
+    "solar_radiation": SensorEntityDescription(
+        key="solar_radiation",
         device_class=SensorDeviceClass.IRRADIANCE,
-        unit=UnitOfIrradiance.WATTS_PER_SQUARE_METER,
+        native_unit_of_measurement=UnitOfIrradiance.WATTS_PER_SQUARE_METER,
     ),
-    "UV": UrlConversion("uv_index", str_to_int, None, UV_INDEX),
-    "visibility": UrlConversion("nm_visibility", identity),
+    "uv_index": SensorEntityDescription(
+        key="uv_index", native_unit_of_measurement=UV_INDEX
+    ),
+    "visibility": SensorEntityDescription(key="nm_visibility"),
     # Rain
-    "rainin": UrlConversion(
-        "rain_hourly",
-        str_to_float,
+    "rain_hourly": SensorEntityDescription(
+        key="rain_hourly",
         device_class=SensorDeviceClass.PRECIPITATION,
-        unit=UnitOfPrecipitationDepth.INCHES,
+        native_unit_of_measurement=UnitOfPrecipitationDepth.INCHES,
     ),
-    "dailyrainin": UrlConversion(
-        "rain_daily",
-        str_to_float,
+    "rain_daily": SensorEntityDescription(
+        key="rain_daily",
         device_class=SensorDeviceClass.PRECIPITATION,
-        unit=UnitOfPrecipitationDepth.INCHES,
+        native_unit_of_measurement=UnitOfPrecipitationDepth.INCHES,
     ),
     # Indoor sensors
-    "indoortempf": UrlConversion(
-        "indoor_temperature",
-        str_to_float,
+    "indoor_temperature": SensorEntityDescription(
+        key="indoor_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
+        native_unit_of_measurement=UnitOfTemperature.FAHRENHEIT,
     ),
-    "indoorhumidity": UrlConversion(
-        "indoor_humidity",
-        str_to_float,
+    "indoor_humidity": SensorEntityDescription(
+        key="indoor_humidity",
         device_class=SensorDeviceClass.HUMIDITY,
-        unit=PERCENTAGE,
+        native_unit_of_measurement=PERCENTAGE,
     ),
     # Air quality
-    "AqNO": UrlConversion(
-        "pollution_no", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_no": SensorEntityDescription(
+        key="pollution_no", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNO2T": UrlConversion(
-        "pollution_no2t", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_no2t": SensorEntityDescription(
+        key="pollution_no2t", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNO2": UrlConversion(
-        "pollution_no2", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_no2": SensorEntityDescription(
+        key="pollution_no2", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNO2Y": UrlConversion(
-        "pollution_no2y", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_no2y": SensorEntityDescription(
+        key="pollution_no2y", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNOX": UrlConversion(
-        "pollution_nox", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_nox": SensorEntityDescription(
+        key="pollution_nox", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNOY": UrlConversion(
-        "pollution_noy", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_noy": SensorEntityDescription(
+        key="pollution_noy", native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION
     ),
-    "AqNO3": UrlConversion(
-        "pollution_no3_ion", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+    "pollution_no3_ion": SensorEntityDescription(
+        key="pollution_no3_ion",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqSO4": UrlConversion(
-        "pollution_so4_ion", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+    "pollution_so4_ion": SensorEntityDescription(
+        key="pollution_so4_ion",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqSO2": UrlConversion(
-        "pollution_sulfur_dioxide", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_sulfur_dioxide": SensorEntityDescription(
+        key="pollution_sulfur_dioxide",
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
     ),
-    "AqSO2T": UrlConversion(
-        "pollution_sulfur_dioxide_trace",
-        str_to_int,
-        unit=CONCENTRATION_PARTS_PER_BILLION,
+    "pollution_sulfur_dioxide_trace": SensorEntityDescription(
+        key="pollution_sulfur_dioxide_trace",
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
     ),
-    "AqCO": UrlConversion(
-        "pollution_carbon_monoxide",
-        str_to_int,
+    "pollution_carbon_monoxide": SensorEntityDescription(
+        key="pollution_carbon_monoxide",
         device_class=SensorDeviceClass.CO,
-        unit=CONCENTRATION_PARTS_PER_MILLION,
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
     ),
-    "AqCOT": UrlConversion(
-        "pollution_carbon_monoxide_trace",
-        str_to_int,
-        unit=CONCENTRATION_PARTS_PER_BILLION,
+    "pollution_carbon_monoxide_trace": SensorEntityDescription(
+        key="pollution_carbon_monoxide_trace",
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
     ),
-    "AqEC": UrlConversion(
-        "pollution_elemental_carbon",
-        str_to_float,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    "pollution_elemental_carbon": SensorEntityDescription(
+        key="pollution_elemental_carbon",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqOC": UrlConversion(
-        "pollution_organic_carbon",
-        str_to_float,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    "pollution_organic_carbon": SensorEntityDescription(
+        key="pollution_organic_carbon",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqBC": UrlConversion(
-        "pollution_black_carbon",
-        str_to_float,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    "pollution_black_carbon": SensorEntityDescription(
+        key="pollution_black_carbon",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqUV": UrlConversion(
-        "pollution_uv_aeth", str_to_float, unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER
+    "pollution_uv_aeth": SensorEntityDescription(
+        key="pollution_uv_aeth",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqPM2.5": UrlConversion(
-        "pollution_pm25_mass",
-        str_to_float,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    "pollution_pm25_mass": SensorEntityDescription(
+        key="pollution_pm25_mass",
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqPM10": UrlConversion(
-        "pollution_pm10_mass",
-        str_to_float,
+    "pollution_pm10_mass": SensorEntityDescription(
+        key="pollution_pm10_mass",
         device_class=SensorDeviceClass.PM10,
-        unit=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     ),
-    "AqOZONE": UrlConversion(
-        "pollution_ozone", str_to_int, unit=CONCENTRATION_PARTS_PER_BILLION
+    "pollution_ozone": SensorEntityDescription(
+        key="pollution_ozone",
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
     ),
 }
 
 
-def _pws_to_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
-    measurement_dict: dict[str, Measurement] = {}
-    for given_param, value in fields.items():
-        param_matched = False
-        for expected_param in url_to_status_dict:
-            if given_param == expected_param:
-                param_matched = True
-                converter = url_to_status_dict[expected_param]
-                try:
-                    converted_value = converter(value)
-                    measurement_dict[converter.name] = converted_value
-                except ValueError as err:
-                    logging.warning(f"Parameter error for {given_param}: {err}")
-                    pass
-                break
-        if not param_matched:
-            logging.warning(f"Unknown parameter: {given_param}")
+class WeatherStationSensor:
+    entity_description: SensorEntityDescription
 
-    return measurement_dict
+    name: str
+    last_measurement_date: datetime.datetime | None
+    last_measurement: Measurement | None
+
+    def __init__(self, name: str, entity_description: SensorEntityDescription):
+        self.name = name
+        self.entity_description = entity_description
+        self.last_measurement = None
+        self.last_measurement_date = None
 
 
-@dataclass
 class WeatherStation:
     id: str
     password: str
     update_callback: Callable[["WeatherStation"], None] | None
+    sensors: dict[str, WeatherStationSensor]
 
     def __init__(
         self,
         id: str,
         password: str,
         update_callback: Callable[["WeatherStation"], None] | None = None,
+        sensors: dict[str, WeatherStationSensor] | None = None,
     ):
         self.id = id
         self.password = password
         self.update_callback = update_callback
+        if sensors is not None:
+            self.sensors = sensors
+        else:
+            self.sensors = {}
 
-    latest_measurement: dict[str, Measurement] | None = None
+    def update_measurement(self, measurements: dict[str, Measurement]):
+        if "date" not in measurements:
+            raise ValueError("Date absent from measurement")
+        measurements_date = measurements["date"].value
 
-    def update_measurement_from_pws_params(self, raw_pws_params: dict[str, str]):
-        self.latest_measurement = _pws_to_measurement_dict(raw_pws_params)
+        for sensor_name, measurement in measurements.items():
+            # No date sensor
+            if sensor_name == "date":
+                continue
+
+            if sensor_name not in self.sensors:
+                if sensor_name not in SENSOR_MAPPING:
+                    raise ValueError(f"Unknown sensor: {sensor_name}")
+                self.sensors[sensor_name] = WeatherStationSensor(
+                    sensor_name, SENSOR_MAPPING[sensor_name]
+                )
+            self.sensors[sensor_name].last_measurement = measurement
+            self.sensors[sensor_name].last_measurement_date = measurements_date
+
         if self.update_callback is not None:
             self.update_callback(self)
 
     def get_ha_payloads(self) -> dict[str, dict[str, Any]]:
-        if self.latest_measurement is None:
-            raise ValueError("No measurement")
-        assert self.latest_measurement is not None
-
-        if "date" not in self.latest_measurement:
-            raise ValueError("Date absent from measurement")
-
-        latest_measurement_date: datetime.datetime = self.latest_measurement[
-            "date"
-        ].value
-
         payloads = {}
 
-        for name, measurement in self.latest_measurement.items():
-            # Do not generate a payload for the date
-            if name == "date":
+        for name, sensor in self.sensors.items():
+            # Skip sensors without measurements.
+            if sensor.last_measurement is None:
                 continue
 
             attributes = {}
-            if measurement.unit is not None:
-                attributes["unit_of_measurement"] = measurement.unit
-            if measurement.device_class is not None:
-                attributes["device_class"] = measurement.device_class
+            if (
+                sensor.last_measurement is not None
+                and sensor.last_measurement.unit is not None
+            ):
+                attributes["unit_of_measurement"] = sensor.last_measurement.unit
+            elif sensor.entity_description.native_unit_of_measurement is not None:
+                attributes["unit_of_measurement"] = (
+                    sensor.entity_description.native_unit_of_measurement
+                )
+            if sensor.entity_description.device_class is not None:
+                attributes["device_class"] = sensor.entity_description.device_class
             attributes["friendly_name"] = name
-            attributes["updated"] = str(
-                latest_measurement_date.strftime("%Y-%m-%dT%H:%M:%S%z")
-            )
-            payload = {"state": str(measurement.value), "attributes": attributes}
+            if sensor.last_measurement_date is not None:
+                attributes["updated"] = str(
+                    sensor.last_measurement_date.strftime("%Y-%m-%dT%H:%M:%S%z")
+                )
+
+            payload = {
+                "state": str(sensor.last_measurement.value),
+                "attributes": attributes,
+            }
 
             payloads[name] = payload
 
