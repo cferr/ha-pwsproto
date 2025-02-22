@@ -112,7 +112,7 @@ Le port par défaut utilisé par ce module est 8080.
 Les stations météo utilisent les ports 80 (pour le protocole HTTP) et 443 (pour
 le protocole HTTPS). Ces ports privilégiés nécessitent une configuration
 spéciale pour être utilisés. Vous pouvez:
-* Utiliser un proxy inversé (voir cette section),
+* Utiliser un proxy inversé,
 * Utiliser une redirection de port, si le serveur est derrière un routeur; le
 port 80 doit être renvoyé vers le port sur lequel écoute le serveur, par
 exemple 8080.
