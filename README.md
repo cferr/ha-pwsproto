@@ -19,7 +19,7 @@ plus le recours à l'API HTTP Home Assistant.
 Ce paquet s'installe à l'aide de `pip`:
 
 ```
-pip install git+https://github.com/cferr/pwsproto.git
+pip install git+https://github.com/cferr/ha-pwsproto.git
 ```
 
 # Utilisation
