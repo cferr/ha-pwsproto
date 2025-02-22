@@ -62,7 +62,10 @@ def main():
     )
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
-    app.run(host=args.pws_listen, port=args.pws_port)
+    try:
+        app.run(host=args.pws_listen, port=args.pws_port)
+    except PermissionError as exn:
+        logging.error(f"Could not start server: {exn}")
 
 
 if __name__ == "__main__":
