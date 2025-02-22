@@ -114,8 +114,8 @@ le protocole HTTPS). Ces ports privilégiés nécessitent une configuration
 spéciale pour être utilisés. Vous pouvez:
 * Utiliser un proxy inversé (voir cette section),
 * Utiliser une redirection de port, si le serveur est derrière un routeur; le
-port 80 doit être renvoyé vers le port sur lequel écoute le serveur, par exemple
-8080.
+port 80 doit être renvoyé vers le port sur lequel écoute le serveur, par
+exemple 8080.
 * Utiliser le port 80 directement, avec l'option `--pws-port 80`. Il peut être
 nécessaire d'utiliser un compte administrateur ou super-utilisateur:
 ```
@@ -139,10 +139,3 @@ L'erreur suivante apparaîtra si le jeton n'existe pas:
 ```
 ERROR:root:Set the LLT environment variable
 ```
-
-### Proxy inversé
-
-Si votre serveur est exposé à Internet, il est recommandé d'utiliser ce module
-derrière un proxy inversé, qui permet d'utiliser le protocole chiffré HTTPS.
-
-[Documentation à compléter]
