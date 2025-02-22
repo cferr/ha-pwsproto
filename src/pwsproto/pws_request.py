@@ -242,8 +242,11 @@ url_param_to_status_dict: dict[str, ParameterConversion] = {
 }
 
 
-def _pws_to_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
+def pws_to_measurement_dict(
+    fields: dict[str, str],
+) -> tuple[dict[str, Measurement], dict[str, str]]:
     measurement_dict: dict[str, Measurement] = {}
+    unmatched_params: dict[str, str] = {}
     for given_param, value in fields.items():
         param_matched = False
         for expected_param in url_param_to_status_dict:
@@ -258,9 +261,9 @@ def _pws_to_measurement_dict(fields: dict[str, str]) -> dict[str, Measurement]:
                     pass
                 break
         if not param_matched:
-            logging.warning(f"Unknown parameter: {given_param}")
+            unmatched_params[given_param] = value
 
-    return measurement_dict
+    return measurement_dict, unmatched_params
 
 
 class PWSRequestProcessor:
@@ -291,7 +294,10 @@ class PWSRequestProcessor:
         params_filtered = {
             key: value for key, value in params.items() if key not in ["ID", "PASSWORD"]
         }
-        measurement_dict = _pws_to_measurement_dict(params_filtered)
+        measurement_dict, unmatched_params = pws_to_measurement_dict(params_filtered)
+
+        for param, value in unmatched_params.items():
+            logging.warning(f"Unknown parameter: {param}={value}")
 
         for station in stations_auth:
             station.update_measurement(measurement_dict)
