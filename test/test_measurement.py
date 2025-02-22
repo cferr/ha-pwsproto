@@ -23,7 +23,7 @@ def test_pws_to_measurement_dict():
     assert sample_measurements[expected_name].value == 42.0
 
 
-def test_pws_to_measurement_dict_unknown(caplog):
+def test_pws_to_measurement_dict_unknown():
     sample_measurements, unmatched_params = pws_to_measurement_dict(
         {
             "nonxist": "42.0",
